@@ -5,14 +5,14 @@ import json
 import logging
 import math
 import os
-from einops import rearrange, einsum
+
 import einx
-
 import torch
+import torch.distributed as dist
 import torch.nn as nn
+from einops import einsum, rearrange
+from jaxtyping import Bool, Float, Int
 from torch import Tensor
-from jaxtyping import Float, Bool, Int
-
 
 from .nn_utils import softmax
 
@@ -474,6 +474,7 @@ class CausalMultiHeadSelfAttention(nn.Module):
         self.output_proj = Linear(self.num_heads * self.d_v, self.d_model)
 
         self.positional_encoder = positional_encoder  # RoPE
+        self.local_num_heads = self.num_heads // dist.get_world_size()
 
     def forward(self, x: Float[Tensor, " ... seq d_k"], token_positions: Int[Tensor, " ... seq"] | None = None) -> Float[Tensor, " ... seq d_v"]:
         """
